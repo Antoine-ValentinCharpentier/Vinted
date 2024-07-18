@@ -1,6 +1,5 @@
 class Item:
     def __init__(self, data):
-        print(data)
         self.id = data.get("id", None)
         
         self.title = data.get("title", "")
@@ -30,3 +29,6 @@ class Item:
 
     def __eq__(self, other):
         return self.id == other.id
+    
+    def to_dict(self):
+        return vars(self)

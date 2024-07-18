@@ -14,7 +14,7 @@ class Vinted:
         if proxy is not None:
             self.requester.session.proxies.update(proxy)
 
-    def search(self, url_research, nb_items_page: int = 96, starting_page: int = 0, ending_page: int = 1, filename: str = "./data/results.csv", time: int = None, want_json: bool = False) -> List[Item]:
+    def search(self, url_research, nb_items_page: int = 96, starting_page: int = 0, ending_page: int = 1, filename: str = "./data/results.csv", time: int = None) -> List[Item]:
         results = []
         
         if ending_page < starting_page:
@@ -35,7 +35,7 @@ class Vinted:
                 response.raise_for_status()
                 items = response.json().get("items", [])
 
-                results_page = [Item(_item) for _item in items] if not want_json else items
+                results_page = [Item(_item) for _item in items]
                 results += results_page
 
             save_to_csv(results, filename)
@@ -50,8 +50,7 @@ class Vinted:
         for catalog_id in catalogs_ids:
             print('>> Catalog id n°', catalog_id)
             url = VINTED_URL_PAGE_CATALOG.replace('{{CATALOG_ID}}', str(catalog_id))
-            print(url)
-            results_catalogs = self.search(url, nb_items_page, starting_page=1, ending_page=nb_page, want_json=True, filename=f"{folder_results}/results_{catalog_id}.csv")
+            results_catalogs = self.search(url, nb_items_page, starting_page=1, ending_page=nb_page, filename=f"{folder_results}/results_{catalog_id}.csv")
             results += results_catalogs
         
         return results

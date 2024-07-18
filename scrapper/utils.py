@@ -10,6 +10,7 @@ def get_param(querys, key, join_with=',', default=''):
 
 def save_to_csv(items: List[Item], filename: str):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    df = pd.DataFrame(items)
+    data = [item.to_dict() for item in items]
+    df = pd.DataFrame(data)
     df.to_csv(filename, index=False, encoding='utf-8')
     print(f"Results saved to {filename}")
