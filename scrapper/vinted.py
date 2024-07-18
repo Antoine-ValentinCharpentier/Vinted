@@ -4,7 +4,7 @@ from typing import List, Dict
 
 from requester import Requester
 from item import Item
-from utils import get_param
+from utils import get_param, save_to_csv
 
 from  constants import VINTED_API_URL, VINTED_PRODUCTS_ENDPOINT, VINTED_DTOS_ENDPOINT, VINTED_URL_PAGE_CATALOG
 
@@ -14,7 +14,7 @@ class Vinted:
         if proxy is not None:
             self.requester.session.proxies.update(proxy)
 
-    def search(self, url_research, nb_items_page: int = 96, starting_page: int = 0, ending_page: int = 1, time: int = None, want_json: bool = False) -> List[Item]:
+    def search(self, url_research, nb_items_page: int = 96, starting_page: int = 0, ending_page: int = 1, filename: str = "./data/results.csv", time: int = None, want_json: bool = False) -> List[Item]:
         results = []
         
         if ending_page < starting_page:
@@ -38,11 +38,12 @@ class Vinted:
                 results_page = [Item(_item) for _item in items] if not want_json else items
                 results += results_page
 
+            save_to_csv(results, filename)
             return results
         except HTTPError as err:
             raise err
         
-    def search_all(self, nb_items_page: int = 96, nb_page: int = 10, excludes_catalogs_names: List[str] = []) -> List[Item]:
+    def search_all(self, nb_items_page: int = 96, nb_page: int = 10, excludes_catalogs_names: List[str] = [], folder_results: str = "./data",) -> List[Item]:
         results = []
         catalogs_ids = self.get_catalogs_ids(excludes_catalogs_names)
         
@@ -50,8 +51,9 @@ class Vinted:
             print('>> Catalog id n°', catalog_id)
             url = VINTED_URL_PAGE_CATALOG.replace('{{CATALOG_ID}}', str(catalog_id))
             print(url)
-            results_catalogs = self.search(url, nb_items_page, starting_page=1, ending_page=nb_page, want_json=True)
+            results_catalogs = self.search(url, nb_items_page, starting_page=1, ending_page=nb_page, want_json=True, filename=f"{folder_results}/results_{catalog_id}.csv")
             results += results_catalogs
+        
         return results
             
     def get_dtos(self, catalog_id: int = 1206) -> Dict:
