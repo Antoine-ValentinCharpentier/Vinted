@@ -1,5 +1,6 @@
 from requests.exceptions import HTTPError
 from typing import List, Dict
+from time import sleep
 
 from requester import Requester
 from item import Item
@@ -8,7 +9,8 @@ from utils import parse_url, save_to_csv
 from  constants import VINTED_API_URL, VINTED_PRODUCTS_ENDPOINT, VINTED_DTOS_ENDPOINT, VINTED_URL_PAGE_CATALOG
 
 class Vinted:
-    def __init__(self, proxy=None):
+    def __init__(self, request_delay=0.5, proxy=None):
+        self.request_delay = request_delay
         self.requester = Requester()
         if proxy is not None:
             self.requester.session.proxies.update(proxy)
@@ -36,6 +38,7 @@ class Vinted:
 
                 results_page = [Item(_item) for _item in items]
                 results += results_page
+                sleep(self.request_delay)
 
             save_to_csv(results, filename)
             return results
