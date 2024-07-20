@@ -11,9 +11,12 @@ from  constants import VINTED_API_URL, VINTED_PRODUCTS_ENDPOINT, VINTED_DTOS_END
 class Vinted:
     def __init__(self, request_delay=0.5, proxy=None):
         self.request_delay = request_delay
+        
         self.requester = Requester()
         if proxy is not None:
             self.requester.session.proxies.update(proxy)
+            
+        self.catalogs = self.get_catalogs()
 
     def search(self, url_research, nb_items_page: int = 96, starting_page: int = 0, ending_page: int = 1, filename: str = "./data/results.csv", time: int = None) -> List[Item]:
         results = []
@@ -36,7 +39,9 @@ class Vinted:
                 response.raise_for_status()
                 items = response.json().get("items", [])
 
-                results_page = [Item(_item) for _item in items]
+                section_names = self.catalogs[int(params_request['catalog_ids'])]
+                
+                results_page = [Item(_item, section_names=section_names) for _item in items]
                 results += results_page
                 sleep(self.request_delay)
 
@@ -47,10 +52,15 @@ class Vinted:
         
     def search_all(self, nb_items_page: int = 96, nb_page: int = 10, excludes_catalogs_names: List[str] = [], folder_results: str = "./data",) -> List[Item]:
         results = []
-        catalogs_ids = self.get_catalogs_ids(excludes_catalogs_names)
         
-        for catalog_id in catalogs_ids:
-            print('>> Catalog id n°', catalog_id)
+        catalogs_filtered = {
+            key: value
+            for key, value in self.catalogs.items()
+            if not set(value) & set(excludes_catalogs_names)
+        }
+        
+        for catalog_id, sections_names in catalogs_filtered.items():
+            print('>> Catalog : ', ', '.join(sections_names))
             url = VINTED_URL_PAGE_CATALOG.replace('{{CATALOG_ID}}', str(catalog_id))
             results_catalogs = self.search(url, nb_items_page, starting_page=1, ending_page=nb_page, filename=f"{folder_results}/results_{catalog_id}.csv")
             results += results_catalogs
@@ -68,14 +78,11 @@ class Vinted:
         except HTTPError as err:
             raise err
         
-    def get_catalogs_ids(self, excludes_catalogs_names: List[str] = [] ) -> List[int]:
+    def get_catalogs(self) -> Dict[(str,List[str])]:
         dtos = self.get_dtos()
-        catalogs_ids = []
+        catalogs = {}
         for catalogs_root in dtos['dtos']['catalogs']:
-            if catalogs_root['title'] not in excludes_catalogs_names:
-                for sub_catalogs in catalogs_root['catalogs']:
-                    if sub_catalogs['title'] not in excludes_catalogs_names:
-                        for sub_sub_catalogs in sub_catalogs['catalogs']:
-                            if sub_sub_catalogs['title'] not in excludes_catalogs_names:
-                                catalogs_ids.append(sub_sub_catalogs['id'])
-        return catalogs_ids
+            for sub_catalogs in catalogs_root['catalogs']:
+                for sub_sub_catalogs in sub_catalogs['catalogs']:
+                    catalogs[sub_sub_catalogs['id']] = [catalogs_root['title'], sub_catalogs['title'], sub_sub_catalogs['title']]
+        return catalogs
