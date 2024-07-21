@@ -1,9 +1,7 @@
 from urllib.parse import urlparse, parse_qsl
-import pandas as pd
 import os
-from typing import List, Dict
 
-from item import Item
+from typing import Dict
 
 def parse_url(url_research, nbItems=20, page=1, time=None) -> Dict:
     query_data = urlparse(url_research).query
@@ -35,9 +33,5 @@ def get_param(querys, key, join_with=',', default=''):
     """Extrait les valeurs associées à une clé, les joint avec un séparateur et retourne une chaîne."""
     return join_with.join(map(str, [value for k, value in querys if k == key])) or default
 
-def save_to_csv(items: List[Item], filename: str):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    data = [item.to_dict() for item in items]
-    df = pd.DataFrame(data)
-    df.to_csv(filename, index=False, encoding='utf-8')
-    print(f"Results saved to {filename}")
+def create_directory_structure(path: str):
+    os.makedirs(os.path.join(path), exist_ok=True)
