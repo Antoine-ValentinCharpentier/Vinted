@@ -114,7 +114,6 @@ class Vinted:
                         with open(complete_filepath, 'wb') as img:
                             img.write(response.content)
                         df.at[idx, 'path_downloaded_photo'] = complete_filepath
-                        sleep(self.request_delay)
                     except requests.RequestException as e:
                         print(f'Error while downloading: {row["photo"]}, error: {e}')
         
