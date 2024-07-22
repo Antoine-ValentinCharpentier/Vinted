@@ -6,7 +6,11 @@ class Item:
         
         self.title = data.get("title", "")
         self.url = data.get("url", "")
-        self.photo = data.get("photo", {}).get("url", "")
+        photo_data = data.get("photo", {})
+        if photo_data is not None:
+            self.photo = photo_data.get("url", "")
+        else:
+            self.photo = ""
         
         self.price = data.get("price", 0.0)
         self.discount = data.get("discount", None)
@@ -23,11 +27,24 @@ class Item:
         
         self.promoted = data.get("promoted", False)
         
-        self.user_id = data.get("user", {}).get("id", 0)
-        self.user_business = data.get("user", {}).get("business", False)
-        self.user_url = data.get("user", {}).get("profile_url", "")
+        user_data = data.get("user", {})
+        if user_data is not None:
+            self.user_id = user_data.get("id", -1)
+            self.user_business = user_data.get("business", False)
+            self.user_url = user_data.get("profile_url", "")
+        else:
+            self.user_id = -1
+            self.user_business = False
+            self.user_url = ""
         
-        self.created_at = data.get("photo", {}).get("high_resolution", {}).get("timestamp", None)
+        if photo_data is not None:
+            high_res_data = photo_data.get("high_resolution")
+            if high_res_data is not None:
+                self.created_at = high_res_data.get("timestamp", None)
+            else:
+                self.created_at = None
+        else:
+            self.created_at = None
         
         self.section_names = section_names
 
