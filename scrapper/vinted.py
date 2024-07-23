@@ -30,6 +30,9 @@ class Vinted:
         if starting_page < 1:
             print(f"Starting page {starting_page} is invalid, resetting to 1.")
             starting_page = 1
+        if nb_items_page > 192:
+            print(f"nb_items_page can't be more than 192")
+            nb_items_page = 192
             
         params_request = parse_url(url_research, nb_items_page, 1, time)
         if int(params_request['catalog_ids']) not in self.catalogs.keys(): 
