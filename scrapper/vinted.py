@@ -3,11 +3,10 @@ from typing import List, Dict
 from time import sleep
 import pandas as pd
 import os
-import requests
 
 from requester import Requester
 from item import Item
-from utils import parse_url, create_directory_structure, max_catalog_depth, collect_catalogs
+from utils import parse_url, create_directory_structure, download_photos_concurrently, max_catalog_depth, collect_catalogs
 
 from  constants import VINTED_API_URL, VINTED_PRODUCTS_ENDPOINT, VINTED_DTOS_ENDPOINT, VINTED_URL_PAGE_CATALOG
 
@@ -96,7 +95,7 @@ class Vinted:
         
         return catalogs
     
-    def save_results(self, items: List[dict], filename: str):
+    def save_results(self, items: List[Item], filename: str):
         create_directory_structure("/".join(filename.split('/')[:-1]))
         
         data = [item.to_dict() for item in items]
@@ -104,23 +103,8 @@ class Vinted:
         df['path_downloaded_photo'] = ''
         
         if self.download_images:
-            for idx, row in df.iterrows():
-                photo_extension = row['photo'].split('?')[0].split('.')[-1]
-                complete_filepath = os.path.join(
-                    "/".join(filename.split('/')[:-1]), 'photos', 
-                    row['section'], row['sub_section'], row['sub_sub_section'], 
-                    f"{row['id']}.{photo_extension}"
-                )
-                if not os.path.exists(complete_filepath):
-                    create_directory_structure(os.path.dirname(complete_filepath))
-                    try:
-                        response = requests.get(url=row['photo'])
-                        response.raise_for_status()  
-                        with open(complete_filepath, 'wb') as img:
-                            img.write(response.content)
-                        df.at[idx, 'path_downloaded_photo'] = complete_filepath
-                    except requests.RequestException as e:
-                        print(f'Error while downloading: {row["photo"]}, error: {e}')
+            cpu_count = os.cpu_count() or 1
+            download_photos_concurrently(df, filename, max_workers=cpu_count)
         
         df.to_csv(filename, index=False, encoding='utf-8')
         print(f"Results saved to {filename}")

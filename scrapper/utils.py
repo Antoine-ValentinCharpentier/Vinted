@@ -1,5 +1,8 @@
 from urllib.parse import urlparse, parse_qsl
 import os
+import pandas as pd
+import threading
+import requests
 
 from typing import Dict
 
@@ -61,3 +64,49 @@ def collect_catalogs(catalog, current_path, nb_max_section, catalogs):
 
 def create_directory_structure(path: str):
     os.makedirs(os.path.join(path), exist_ok=True)
+    
+def download_photo(row, filename, results, idx):
+    photo_extension = row['photo'].split('?')[0].split('.')[-1]
+    
+    sections = [row[col] for col in row.index if col.endswith('section') and pd.notna(row[col]) and row[col]]
+    
+    complete_filepath = os.path.join(
+        "/".join(filename.split('/')[:-1]), 'photos', 
+        *sections, 
+        f"{row['id']}.{photo_extension}"
+    )
+    
+    if not os.path.exists(complete_filepath):
+        create_directory_structure(os.path.dirname(complete_filepath))
+        try:
+            response = requests.get(url=row['photo'])
+            response.raise_for_status()  
+            with open(complete_filepath, 'wb') as img:
+                img.write(response.content)
+            results[idx] = complete_filepath
+        except requests.RequestException as e:
+            print(f'Error while downloading: {row["photo"]}, error: {e}')
+            results[idx] = None
+    else:
+        results[idx] = complete_filepath
+
+def download_photos_concurrently(df, filename, max_workers=10):
+    threads = []
+    path_downloaded_images = [''] * len(df)
+
+    for idx, row in df.iterrows():
+        if len(threads) >= max_workers:
+            for thread in threads:
+                thread.join() 
+            threads = []
+
+        thread = threading.Thread(target=download_photo, args=(row, filename, path_downloaded_images, idx))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join() 
+
+    df['path_downloaded_photo'] = path_downloaded_images
+                
+                
