@@ -7,7 +7,7 @@ import requests
 
 from requester import Requester
 from item import Item
-from utils import parse_url, create_directory_structure
+from utils import parse_url, create_directory_structure, max_catalog_depth, collect_catalogs
 
 from  constants import VINTED_API_URL, VINTED_PRODUCTS_ENDPOINT, VINTED_DTOS_ENDPOINT, VINTED_URL_PAGE_CATALOG
 
@@ -82,15 +82,16 @@ class Vinted:
         except HTTPError as err:
             raise err
         
-    def get_catalogs(self) -> Dict[(str,List[str])]:
+    def get_catalogs(self) -> Dict[str, List[str]]:
         dtos = self.get_dtos()
+        nb_max_section = max_catalog_depth(dtos)
         catalogs = {}
-        for catalogs_root in dtos['dtos']['catalogs']:
-            for sub_catalogs in catalogs_root['catalogs']:
-                for sub_sub_catalogs in sub_catalogs['catalogs']:
-                    catalogs[sub_sub_catalogs['id']] = [catalogs_root['title'], sub_catalogs['title'], sub_sub_catalogs['title']]
+        
+        for catalog_root in dtos['dtos']['catalogs']:
+            collect_catalogs(catalog_root, [], nb_max_section, catalogs)
+        
         return catalogs
-
+    
     def save_results(self, items: List[dict], filename: str):
         create_directory_structure("/".join(filename.split('/')[:-1]))
         
