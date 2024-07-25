@@ -1,7 +1,8 @@
 import os
 import pandas as pd
+from typing import List
 
-def merge_results(folder_path: str = "../data", file_path_output: str = "../data/merged_results.csv", percentage: int=100):
+def merge_results(folder_path: str = "../data", file_path_output: str = "../data/merged_results.csv", percentage: int=100) -> pd.DataFrame :
     if not (0 <= percentage <= 100):
         print('The percentage must have a value between 0 and 100!')
         percentage = max(0, min(percentage, 100))
@@ -28,4 +29,10 @@ def merge_results(folder_path: str = "../data", file_path_output: str = "../data
     
     return merged_df
     
+def remove_useless_columns(df: pd.DataFrame, columns_to_drop : List[str]=['user_url', 'photo', 'url', 'title', 'id', 'content_source', 'user_id']) -> pd.DataFrame :
+    return df.drop(columns=columns_to_drop)
 
+def preprocessing(folder_path: str = "../data"):
+    df = merge_results(folder_path, file_path_output="../data/merged_results.csv", percentage=100)
+    df = remove_useless_columns(df, columns_to_drop=['user_url', 'photo', 'url', 'title', 'id', 'content_source', 'user_id'])
+    return df
