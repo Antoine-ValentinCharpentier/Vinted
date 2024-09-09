@@ -5,3 +5,5 @@
 *.jpeg
 *.jpg
 *.png
+
+model.pth
